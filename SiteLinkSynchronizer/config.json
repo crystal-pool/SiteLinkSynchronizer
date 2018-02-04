@@ -1,0 +1,41 @@
+﻿{
+  "WikiSites": {
+    "crystalpool": { "ApiEndpoint": "https://crystalpool.cxuesong.com/api.php" },
+    "zhwarriorswiki": { "ApiEndpoint": "https://warriors.huijiwiki.com/api.php" },
+    "fiwarriorswiki": { "ApiEndpoint": "http://fi.soturikissat.wikia.com/api.php" },
+    "ukwarriorswiki": { "ApiEndpoint": "http://uk.uawarriors.wikia.com/api.php" },
+    "nlwarriorswiki": { "ApiEndpoint": "http://nl.warriorcats.wikia.com/api.php" },
+    "ltwarriorswiki": { "ApiEndpoint": "http://lt.klanukariailt.wikia.com/api.php" },
+    "frwarriorswiki": { "ApiEndpoint": "http://fr.lgdc.wikia.com/api.php" },
+    "eswarriorswiki": { "ApiEndpoint": "http://es.gatosguerreros.wikia.com/api.php" },
+    "itwarriorswiki": { "ApiEndpoint": "http://it.warriors.wikia.com/api.php" },
+    "ruwarriorswiki": { "ApiEndpoint": "http://ru.warriors-cats.wikia.com/api.php" },
+    "enwarriorswiki": { "ApiEndpoint": "http://warriors.wikia.com/api.php" },
+    "dewarriorswiki": { "ApiEndpoint": "http://de.warrior-cats.wikia.com/api.php" },
+    "cswarriorswiki": { "ApiEndpoint": "http://cs.valecnici.wikia.com/api.php" },
+    "plwarriorswiki": { "ApiEndpoint": "http://pl.wojownicy.wikia.com/api.php" }
+  },
+  "Synchronizer": {
+    "RepositorySite": "crystalpool",
+    "ClientSites": [
+      "zhwarriorswiki",
+      "fiwarriorswiki",
+      "ukwarriorswiki",
+      "nlwarriorswiki",
+      "ltwarriorswiki",
+      "frwarriorswiki",
+      "eswarriorswiki",
+      "itwarriorswiki",
+      "ruwarriorswiki",
+      "enwarriorswiki",
+      "dewarriorswiki",
+      "cswarriorswiki",
+      "plwarriorswiki"
+    ],
+    "Namespaces": [ 0, 4 ],
+    "WhatIf": true
+  },
+  "StateStore": {
+    "FileName": "state.db" 
+  }
+}
