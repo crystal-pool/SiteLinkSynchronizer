@@ -27,7 +27,7 @@ namespace SiteLinkSynchronizer
             services.Configure<StateStoreConfig>(config.GetSection("StateStore"));
 
             services.AddLogging(builder => builder
-                .SetMinimumLevel(LogLevel.Trace)
+                .SetMinimumLevel(LogLevel.Information)
                 .AddConsole());
 
             services.AddSingleton<StateStore>();
@@ -40,7 +40,7 @@ namespace SiteLinkSynchronizer
             services.AddSingleton<IWikiFamily>(sp =>
             {
                 var opt = sp.GetRequiredService<IOptions<WikiSitesConfig>>();
-                var inst = new MyWikiFamily(sp.GetRequiredService<IWikiClient>(), null);
+                var inst = new MyWikiFamily(sp.GetRequiredService<IWikiClient>(), sp.GetRequiredService<ILoggerFactory>());
                 foreach (var site in opt.Value.WikiSites)
                 {
                     inst.Register(site.Key, site.Value.ApiEndpoint);

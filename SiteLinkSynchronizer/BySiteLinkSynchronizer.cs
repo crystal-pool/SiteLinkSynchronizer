@@ -47,7 +47,7 @@ namespace SiteLinkSynchronizer
                 }
             }
             var endTime = DateTime.UtcNow - TimeSpan.FromMinutes(1);
-            logger.LogTrace("Checking on site: {Site}, Timestamp: {Timestamp1} ~ {Timestamp2} ({Duration:G}), LastLogId: {StartLogId}.",
+            logger.LogDebug("Checking on site: {Site}, Timestamp: {Timestamp1} ~ {Timestamp2} ({Duration:G}), LastLogId: {StartLogId}.",
                 clientSiteName, startTime, endTime, endTime - startTime, lastLogId);
             IAsyncEnumerable<LogEventItem> logEvents = null;
             if (client.SiteInfo.Version >= new Version(1, 24))
@@ -105,14 +105,19 @@ namespace SiteLinkSynchronizer
             if (logEvents == null) return;
             logEvents = logEvents.Where(e => e.LogId > lastLogId);
 
-            var titleIdCache = new Dictionary<string, string>();
+            var articleState = new SiteArticleStateContainer(logger);
 
             async Task FetchTitleIds(IEnumerable<string> titles)
             {
-                var workTitles = titles.Where(t => !titleIdCache.ContainsKey(t)).ToList();
+                var workTitles = titles.Where(t => !articleState.ContainsArticleTitle(t)).ToList();
                 var ids = await Entity.IdsFromSiteLinksAsync(repos, clientSiteName, workTitles).ToList();
                 for (int i = 0; i < workTitles.Count; i++)
-                    titleIdCache[workTitles[i]] = ids[i];
+                {
+                    if (ids[i] != null)
+                        articleState.AddEntityArticle(ids[i], workTitles[i]);
+                    else
+                        articleState.AddTrivialArticle(workTitles[i]);
+                }
             }
 
             async Task ProcessBatch(IList<LogEventItem> batch)
@@ -121,54 +126,62 @@ namespace SiteLinkSynchronizer
                 foreach (var logEvent in batch)
                 {
                     // Article does not have associated item in Wikibase repository
-                    var id = titleIdCache[logEvent.Title];
+                    var id = articleState.EntityIdFromArticleTitle(logEvent.Title);
                     if (id == null) continue;
-                    var entity = new Entity(repos, id);
                     if (logEvent.Type == LogActions.Move && (logEvent.Action == LogActions.Move || logEvent.Action == LogActions.MoveOverRedirect))
                     {
                         var newTitle = logEvent.Params.TargetTitle;
                         logger.LogInformation("{ItemId} on {Site}: Moved [[{OldTitle}]] -> [[{NewTitle}]]", id, clientSiteName, logEvent.Title, newTitle);
-                        if (!WhatIf)
-                        {
-                            await entity.EditAsync(new[] {new EntityEditEntry(nameof(entity.SiteLinks), new EntitySiteLink(clientSiteName, newTitle))},
-                                string.Format("/* clientsitelink-update:0|{0}|{0}:{1}|{0}:{2} */ UserName={3}, LogId={4}",
-                                    clientSiteName, logEvent.Title, newTitle, logEvent.UserName, logEvent.LogId),
-                                EntityEditOptions.Bot | EntityEditOptions.Bulk);
-                        }
-
-                        titleIdCache[newTitle] = id;
-                        titleIdCache[logEvent.Title] = null;
+                        articleState.Move(logEvent.Title, newTitle,
+                            string.Format("/* clientsitelink-update:0|{0}|{0}:{1}|{0}:{2} */ UserName={3}, LogId={4}",
+                                clientSiteName, logEvent.Title, newTitle, logEvent.UserName, logEvent.LogId));
                     }
                     else if (logEvent.Type == LogTypes.Delete && logEvent.Action == LogActions.Delete)
                     {
                         logger.LogInformation("{ItemId} on {Site}: Deleted [[{OldTitle}]]", id, clientSiteName, logEvent.Title);
-                        if (!WhatIf)
-                        {
-                            await entity.EditAsync(new[]
-                                {
-                                    new EntityEditEntry(nameof(entity.SiteLinks), new EntitySiteLink(clientSiteName, "dummy"), EntityEditEntryState.Removed)
-                                },
-                                string.Format("/* clientsitelink-remove:1||{0} */ UserName={1}, LogId={2}",
-                                    clientSiteName, logEvent.UserName, logEvent.LogId),
-                                EntityEditOptions.Bot | EntityEditOptions.Bulk);
-                        }
-
-                        // Removed
-                        titleIdCache[logEvent.Title] = null;
+                        articleState.Delete(logEvent.Title,
+                            string.Format("/* clientsitelink-remove:1||{0} */ UserName={1}, LogId={2}",
+                                clientSiteName, logEvent.UserName, logEvent.LogId));
                     }
                 }
 
-                stateStore.LeaveTrace(clientSiteName, batch.Last().TimeStamp, batch.Last().LogId);
             }
 
+            var processedLogId = lastLogId;
             using (var ie = logEvents.Buffer(100).GetEnumerator())
             {
                 while (await ie.MoveNext())
                 {
                     await ProcessBatch(ie.Current);
+                    processedLogId = ie.Current.Last().LogId;
                 }
             }
-            stateStore.LeaveTrace(clientSiteName, endTime);
+
+            if (!WhatIf)
+                stateStore.LeaveTrace(clientSiteName, endTime, processedLogId);
+            int updateCounter = 0;
+            foreach (var op in articleState.EnumEntityOperations())
+            {
+                logger.LogDebug("Change site link of {EntityId} on {SiteName}: [[{OldTitle}]] -> [[{NewTitle}]]",
+                    op.EntityId, clientSiteName, op.OldArticleTitle, op.ArticleTitle);
+                var entity = new Entity(repos, op.EntityId);
+                if (!WhatIf)
+                {
+                    await entity.EditAsync(new[]
+                        {
+                            new EntityEditEntry(nameof(entity.SiteLinks),
+                                new EntitySiteLink(clientSiteName, op.ArticleTitle),
+                                op.ArticleTitle == null ? EntityEditEntryState.Removed : EntityEditEntryState.Updated)
+                        }, op.Comment, EntityEditOptions.Bot | EntityEditOptions.Bulk);
+                }
+
+                updateCounter++;
+            }
+
+            if (WhatIf)
+                logger.LogInformation("Should update {Count} site links for {SiteName}.", updateCounter, clientSiteName);
+            else
+                logger.LogInformation("Updated {Count} site links for {SiteName}.", updateCounter, clientSiteName);
         }
 
     }

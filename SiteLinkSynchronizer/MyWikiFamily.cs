@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using WikiClientLibrary.Client;
 using WikiClientLibrary.Sites;
 
@@ -11,10 +12,12 @@ namespace SiteLinkSynchronizer
     {
 
         private readonly Dictionary<string, CredentialEntry> credentialDict = new Dictionary<string, CredentialEntry>();
+        private readonly ILoggerFactory loggerFactory;
 
         /// <inheritdoc />
-        public MyWikiFamily(IWikiClient wikiClient, string name) : base(wikiClient, name)
+        public MyWikiFamily(IWikiClient wikiClient, ILoggerFactory loggerFactory) : base(wikiClient)
         {
+            this.loggerFactory = loggerFactory;
         }
 
         public void SetCredential(string prefix, string userName, string password)
@@ -26,6 +29,8 @@ namespace SiteLinkSynchronizer
         protected override async Task<WikiSite> CreateSiteAsync(string prefix, string apiEndpoint)
         {
             var site = await base.CreateSiteAsync(prefix, apiEndpoint);
+            site.Logger = loggerFactory.CreateLogger(prefix);
+            
             if (credentialDict.TryGetValue(prefix, out var cred))
             {
                 site.AccountAssertionFailureHandler = cred;
