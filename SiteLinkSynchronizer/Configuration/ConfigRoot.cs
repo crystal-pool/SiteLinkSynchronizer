@@ -31,13 +31,24 @@ namespace SiteLinkSynchronizer.Configuration
         public ICollection<int> Namespaces { get; set; }
 
         public bool WhatIf { get; set; }
-
+        
     }
 
     public class StateStoreConfig
     {
 
         public string FileName { get; set; }
+
+    }
+
+    public class DiscordBotLoggerConfig
+    {
+        /// <summary>
+        /// Discord Bot token for logging.
+        /// </summary>
+        public string Token { get; set; }
+
+        public ulong ChannelId { get; set; }
 
     }
 

@@ -18,10 +18,13 @@ namespace SiteLinkSynchronizer
         // currentArticleTitle --> article
         private readonly Dictionary<string, KnownArticle> articleStateDict = new Dictionary<string, KnownArticle>();
         
-        public SiteArticleStateContainer(ILogger logger)
+        public SiteArticleStateContainer(string name, ILogger logger)
         {
             this.logger = logger;
+            Name = name;
         }
+
+        public string Name { get; }
 
         /// <summary>
         /// Let the container know this title exists, but it does not have any associated entity ID information.
@@ -68,7 +71,7 @@ namespace SiteLinkSynchronizer
                 if (articleStateDict.ContainsKey(newTitle))
                 {
                     // This shouldn't happen, because the page of destination title should be deleted beforehand.
-                    logger.LogWarning("An existing page [[{DestTitle}]] is overwritten without deletion from [[{SrcTitle}]].", newTitle, oldTitle);
+                    logger.LogWarning("{ContainerName}: Existing page [[{DestTitle}]] is overwritten without deletion from [[{SrcTitle}]].", Name, newTitle, oldTitle);
                 }
             }
 

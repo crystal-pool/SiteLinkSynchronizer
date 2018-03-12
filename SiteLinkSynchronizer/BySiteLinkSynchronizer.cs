@@ -32,7 +32,35 @@ namespace SiteLinkSynchronizer
 
         public bool WhatIf { get; set; }
 
-        public async Task CheckRecentLogs(string clientSiteName, ICollection<int> namespaces)
+        public async Task CheckRecentLogsSafeAsync(ICollection<string> clientSiteNames, ICollection<int> namespaces)
+        {
+            logger.LogInformation("Checking on {SiteCount} site(s), {Flags}", clientSiteNames.Count, WhatIf ? "[W]" : null);
+            try
+            {
+                foreach (var clientSiteName in clientSiteNames)
+                {
+                    await CheckRecentLogsSafeAsync(clientSiteName, namespaces);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Exception while checking on {SiteName}.", clientSiteNames);
+            }
+        }
+
+        public async Task CheckRecentLogsSafeAsync(string clientSiteName, ICollection<int> namespaces)
+        {
+            try
+            {
+                await CheckRecentLogsAsync(clientSiteName, namespaces);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Exception while checking on {SiteName}.", clientSiteName);
+            }
+        }
+
+        public async Task CheckRecentLogsAsync(string clientSiteName, ICollection<int> namespaces)
         {
             var repos = await family.GetSiteAsync(RepositorySiteName);
             var client = await family.GetSiteAsync(clientSiteName);
@@ -47,8 +75,8 @@ namespace SiteLinkSynchronizer
                 }
             }
             var endTime = DateTime.UtcNow - TimeSpan.FromMinutes(1);
-            logger.LogDebug("Checking on site: {Site}, Timestamp: {Timestamp1} ~ {Timestamp2} ({Duration:G}), LastLogId: {StartLogId}.",
-                clientSiteName, startTime, endTime, endTime - startTime, lastLogId);
+            logger.LogDebug("Checking on site: {Site}, Timestamp: {Timestamp1} ~ {Timestamp2} ({Duration:G}), LastLogId: {StartLogId}, {Flags}",
+                clientSiteName, startTime, endTime, endTime - startTime, lastLogId, WhatIf ? "[W]" : null);
             IAsyncEnumerable<LogEventItem> logEvents = null;
             if (client.SiteInfo.Version >= new Version(1, 24))
             {
@@ -105,7 +133,7 @@ namespace SiteLinkSynchronizer
             if (logEvents == null) return;
             logEvents = logEvents.Where(e => e.LogId > lastLogId);
 
-            var articleState = new SiteArticleStateContainer(logger);
+            var articleState = new SiteArticleStateContainer(clientSiteName, logger);
 
             async Task FetchTitleIds(IEnumerable<string> titles)
             {
@@ -131,14 +159,16 @@ namespace SiteLinkSynchronizer
                     if (logEvent.Type == LogActions.Move && (logEvent.Action == LogActions.Move || logEvent.Action == LogActions.MoveOverRedirect))
                     {
                         var newTitle = logEvent.Params.TargetTitle;
-                        logger.LogInformation("{ItemId} on {Site}: Moved [[{OldTitle}]] -> [[{NewTitle}]]", id, clientSiteName, logEvent.Title, newTitle);
+                        logger.LogInformation("{ItemId} on {Site}: {UserName} moved [[{OldTitle}]] -> [[{NewTitle}]]",
+                            id, clientSiteName, logEvent.UserName, logEvent.Title, newTitle);
                         articleState.Move(logEvent.Title, newTitle,
                             string.Format("/* clientsitelink-update:0|{0}|{0}:{1}|{0}:{2} */ UserName={3}, LogId={4}",
                                 clientSiteName, logEvent.Title, newTitle, logEvent.UserName, logEvent.LogId));
                     }
                     else if (logEvent.Type == LogTypes.Delete && logEvent.Action == LogActions.Delete)
                     {
-                        logger.LogInformation("{ItemId} on {Site}: Deleted [[{OldTitle}]]", id, clientSiteName, logEvent.Title);
+                        logger.LogInformation("{ItemId} on {Site}: {UserName} deleted [[{OldTitle}]]",
+                            id, clientSiteName, logEvent.UserName, logEvent.Title);
                         articleState.Delete(logEvent.Title,
                             string.Format("/* clientsitelink-remove:1||{0} */ UserName={1}, LogId={2}",
                                 clientSiteName, logEvent.UserName, logEvent.LogId));
@@ -178,11 +208,17 @@ namespace SiteLinkSynchronizer
                 updateCounter++;
             }
 
-            if (WhatIf)
-                logger.LogInformation("Should update {Count} site links for {SiteName}.", updateCounter, clientSiteName);
+            if (updateCounter == 0)
+            {
+                logger.LogDebug("No updates for {SiteName}.", clientSiteName);
+            }
             else
-                logger.LogInformation("Updated {Count} site links for {SiteName}.", updateCounter, clientSiteName);
+            {
+                if (WhatIf)
+                    logger.LogInformation("Should update {Count} site links for {SiteName}.", updateCounter, clientSiteName);
+                else
+                    logger.LogInformation("Updated {Count} site links for {SiteName}.", updateCounter, clientSiteName);
+            }
         }
-
     }
 }

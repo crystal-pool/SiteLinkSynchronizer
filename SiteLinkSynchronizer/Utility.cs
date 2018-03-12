@@ -46,7 +46,7 @@ namespace SiteLinkSynchronizer
     public class LogEventItemTimeStampComparer : Comparer<LogEventItem>
     {
 
-        public static LogEventItemTimeStampComparer Default { get; } = new LogEventItemTimeStampComparer();
+        public new static LogEventItemTimeStampComparer Default { get; } = new LogEventItemTimeStampComparer();
 
         /// <inheritdoc />
         public override int Compare(LogEventItem x, LogEventItem y)
