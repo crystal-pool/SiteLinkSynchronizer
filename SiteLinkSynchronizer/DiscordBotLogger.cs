@@ -111,10 +111,10 @@ namespace SiteLinkSynchronizer
         /// <inheritdoc />
         public void Dispose()
         {
-            disposalCts.Cancel();
+            disposalCts.CancelAfter(30 * 1000);
             try
             {
-                workerTask.Wait(15 * 1000);
+                workerTask.Wait(20 * 1000);
             }
             catch (Exception)
             {
