@@ -7,10 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CXuesong.MW.MwParserFromScratch" Version="0.2.0" />
-    <PackageReference Include="CXuesong.MW.WikiClientLibrary" Version="0.6.0-intX7" />
+    <PackageReference Include="CXuesong.MW.MwParserFromScratch" Version="0.2.1" />
+    <PackageReference Include="CXuesong.MW.WikiClientLibrary" Version="0.6.2" />
     <PackageReference Include="CXuesong.MW.WikiClientLibrary.Bots" Version="0.1.0-int0" />
-    <PackageReference Include="CXuesong.MW.WikiClientLibrary.Wikibase" Version="0.6.0-intX7" />
+    <PackageReference Include="CXuesong.MW.WikiClientLibrary.Wikibase" Version="0.6.0" />
     <PackageReference Include="Discord.Net" Version="2.0.0-beta" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.0" />

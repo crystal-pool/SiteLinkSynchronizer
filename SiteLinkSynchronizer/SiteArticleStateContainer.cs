@@ -53,6 +53,11 @@ namespace SiteLinkSynchronizer
             return articleStateDict.ContainsKey(title);
         }
 
+        public bool ContainsEntityId(string id)
+        {
+            return entityArticleDict.ContainsKey(id);
+        }
+
         public string EntityIdFromArticleTitle(string title)
         {
             // This case may happen when an article has been moved, with redirect left,
@@ -61,20 +66,23 @@ namespace SiteLinkSynchronizer
             return article?.EntityId;
         }
 
-        public bool Move(string oldTitle, string newTitle, string comment)
+        public bool Move(string oldTitle, string newTitle, bool suppressRedirect, string comment)
         {
             if (!articleStateDict.Remove(oldTitle, out var article)) return false;
+            if (articleStateDict.ContainsKey(newTitle))
+            {
+                // This shouldn't happen, because the page of destination title should be deleted beforehand.
+                // Target page is likely to be a redirect, which can be overwritten.
+                logger.LogWarning("{ContainerName}: [[{DestTitle}]] is overwritten by [[{SrcTitle}]].", Name, newTitle,
+                    oldTitle);
+            }
+            // A redirect should have been left…
+            if (!suppressRedirect) articleStateDict.Add(oldTitle, null);
             if (article != null)
             {
                 article.NewTitle = newTitle;
                 article.Comments.Add(comment);
-                if (articleStateDict.ContainsKey(newTitle))
-                {
-                    // This shouldn't happen, because the page of destination title should be deleted beforehand.
-                    logger.LogWarning("{ContainerName}: Existing page [[{DestTitle}]] is overwritten without deletion from [[{SrcTitle}]].", Name, newTitle, oldTitle);
-                }
             }
-
             articleStateDict[newTitle] = article;
             return true;
         }

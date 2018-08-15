@@ -34,7 +34,7 @@ namespace SiteLinkSynchronizer
 
         public async Task CheckRecentLogsSafeAsync(ICollection<string> clientSiteNames, ICollection<int> namespaces)
         {
-            logger.LogInformation("Checking on {SiteCount} site(s), {Flags}", clientSiteNames.Count, WhatIf ? "[W]" : null);
+            logger.LogInformation("Checking on {SiteCount} site(s), {Flags}", clientSiteNames.Count, WhatIf ? "[WhatIf]" : null);
             try
             {
                 foreach (var clientSiteName in clientSiteNames)
@@ -142,9 +142,15 @@ namespace SiteLinkSynchronizer
                 for (int i = 0; i < workTitles.Count; i++)
                 {
                     if (ids[i] != null)
-                        articleState.AddEntityArticle(ids[i], workTitles[i]);
+                    {
+                        // In case we already know this ID, and have moved it around in our state container.
+                        if (!articleState.ContainsEntityId(ids[i]))
+                            articleState.AddEntityArticle(ids[i], workTitles[i]);
+                    }
                     else
+                    {
                         articleState.AddTrivialArticle(workTitles[i]);
+                    }
                 }
             }
 
@@ -155,20 +161,26 @@ namespace SiteLinkSynchronizer
                 {
                     // Article does not have associated item in Wikibase repository
                     var id = articleState.EntityIdFromArticleTitle(logEvent.Title);
-                    if (id == null) continue;
                     if (logEvent.Type == LogActions.Move && (logEvent.Action == LogActions.Move || logEvent.Action == LogActions.MoveOverRedirect))
                     {
                         var newTitle = logEvent.Params.TargetTitle;
-                        logger.LogInformation("{ItemId} on {Site}: {UserName} moved [[{OldTitle}]] -> [[{NewTitle}]]",
-                            id, clientSiteName, logEvent.UserName, logEvent.Title, newTitle);
-                        articleState.Move(logEvent.Title, newTitle,
+                        if (id != null)
+                        {
+                            logger.LogInformation("{ItemId} on {Site}: {UserName} moved [[{OldTitle}]] -> [[{NewTitle}]]. {Flags}",
+                                id, clientSiteName, logEvent.UserName, logEvent.Title, newTitle,
+                                logEvent.Params.SuppressRedirect ? "[SuppressRedirect]" : "");
+                        }
+                        articleState.Move(logEvent.Title, newTitle, logEvent.Params.SuppressRedirect,
                             string.Format("/* clientsitelink-update:0|{0}|{0}:{1}|{0}:{2} */ UserName={3}, LogId={4}",
                                 clientSiteName, logEvent.Title, newTitle, logEvent.UserName, logEvent.LogId));
                     }
                     else if (logEvent.Type == LogTypes.Delete && logEvent.Action == LogActions.Delete)
                     {
-                        logger.LogInformation("{ItemId} on {Site}: {UserName} deleted [[{OldTitle}]]",
-                            id, clientSiteName, logEvent.UserName, logEvent.Title);
+                        if (id != null)
+                        {
+                            logger.LogInformation("{ItemId} on {Site}: {UserName} deleted [[{OldTitle}]]",
+                                id, clientSiteName, logEvent.UserName, logEvent.Title);
+                        }
                         articleState.Delete(logEvent.Title,
                             string.Format("/* clientsitelink-remove:1||{0} */ UserName={1}, LogId={2}",
                                 clientSiteName, logEvent.UserName, logEvent.LogId));

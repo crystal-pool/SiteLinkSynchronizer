@@ -40,7 +40,8 @@ namespace SiteLinkSynchronizer
             services.AddTransient<BySiteLinkSynchronizer>();
             services.AddSingleton<IWikiClient>(sp => new WikiClient
             {
-                ClientUserAgent = WikiClientUtility.BuildUserAgent(typeof(Program).Assembly)
+                ClientUserAgent = WikiClientUtility.BuildUserAgent(typeof(Program).Assembly),
+                Timeout = TimeSpan.FromMinutes(1)
             });
             services.AddSingleton<IWikiFamily>(sp =>
             {
