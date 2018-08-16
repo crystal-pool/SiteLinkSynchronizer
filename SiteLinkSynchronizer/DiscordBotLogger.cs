@@ -71,13 +71,18 @@ namespace SiteLinkSynchronizer
                 if (channel == null) throw new InvalidOperationException($"Cannot join the channel: {channelId}.");
 
                 await client.SetStatusAsync(UserStatus.Online);
-                while (!ct.IsCancellationRequested)
+                try
                 {
-                    await impendingMessagesSemaphore.WaitAsync(ct);
-                    var message = impendingMessages.Take();
-                    await channel.SendMessageAsync(message);
+                    while (!ct.IsCancellationRequested) 
+                    {
+                        await impendingMessagesSemaphore.WaitAsync(ct);
+                        var message = impendingMessages.Take();
+                        await channel.SendMessageAsync(message);
+                    }
+                } catch (OperationCanceledException)
+                {
+                    // cancelled from WaitAsync
                 }
-
                 // Cleanup
                 while (impendingMessages.TryTake(out var message))
                 {
