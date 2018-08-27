@@ -52,4 +52,13 @@ namespace SiteLinkSynchronizer.Configuration
 
     }
 
+    public class DiscordWebhookLoggerConfig
+    {
+
+        public string Token { get; set; }
+
+        public ulong Id { get; set; }
+
+    }
+
 }
