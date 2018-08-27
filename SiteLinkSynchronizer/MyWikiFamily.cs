@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Serilog.Extensions.Logging;
 using WikiClientLibrary.Client;
 using WikiClientLibrary.Sites;
+using ILogger = Serilog.ILogger;
 
 namespace SiteLinkSynchronizer
 {
@@ -19,6 +21,13 @@ namespace SiteLinkSynchronizer
         {
             this.loggerFactory = loggerFactory;
         }
+
+        /// <inheritdoc />
+        public MyWikiFamily(IWikiClient wikiClient, ILogger rootLogger) : base(wikiClient)
+        {
+            this.loggerFactory = new LoggerFactory(new[] {new SerilogLoggerProvider(rootLogger)});
+        }
+
 
         public void SetCredential(string prefix, string userName, string password)
         {

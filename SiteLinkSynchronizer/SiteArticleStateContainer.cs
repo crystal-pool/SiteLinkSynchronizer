@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace SiteLinkSynchronizer
 {
@@ -20,7 +20,7 @@ namespace SiteLinkSynchronizer
         
         public SiteArticleStateContainer(string name, ILogger logger)
         {
-            this.logger = logger;
+            this.logger = logger.ForContext<SiteArticleStateContainer>();
             Name = name;
         }
 
@@ -73,7 +73,7 @@ namespace SiteLinkSynchronizer
             {
                 // This shouldn't happen, because the page of destination title should be deleted beforehand.
                 // Target page is likely to be a redirect, which can be overwritten.
-                logger.LogWarning("{ContainerName}: [[{DestTitle}]] is overwritten by [[{SrcTitle}]].", Name, newTitle,
+                logger.Warning("{ContainerName}: [[{DestTitle}]] is overwritten by [[{SrcTitle}]].", Name, newTitle,
                     oldTitle);
             }
             // A redirect should have been left…

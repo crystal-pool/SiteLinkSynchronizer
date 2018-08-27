@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+using Serilog;
 using SiteLinkSynchronizer.States;
 using WikiClientLibrary.Generators;
 using WikiClientLibrary.Sites;
@@ -18,10 +18,10 @@ namespace SiteLinkSynchronizer
         private readonly StateStore stateStore;
         private readonly ILogger logger;
 
-        public BySiteLinkSynchronizer(ILoggerFactory loggerFactory, IWikiFamily family, StateStore stateStore)
+        public BySiteLinkSynchronizer(ILogger rootLogger, IWikiFamily family, StateStore stateStore)
         {
             if (family == null) throw new ArgumentNullException(nameof(family));
-            logger = loggerFactory.CreateLogger<BySiteLinkSynchronizer>();
+            logger = rootLogger.ForContext<BySiteLinkSynchronizer>();
             this.family = family;
             this.stateStore = stateStore;
         }
@@ -34,7 +34,7 @@ namespace SiteLinkSynchronizer
 
         public async Task CheckRecentLogsSafeAsync(ICollection<string> clientSiteNames, ICollection<int> namespaces)
         {
-            logger.LogInformation("Checking on {SiteCount} site(s), {Flags}", clientSiteNames.Count, WhatIf ? "[WhatIf]" : null);
+            logger.Information("Checking on {SiteCount} site(s), {Flags}", clientSiteNames.Count, WhatIf ? "[WhatIf]" : null);
             try
             {
                 foreach (var clientSiteName in clientSiteNames)
@@ -44,7 +44,7 @@ namespace SiteLinkSynchronizer
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Exception while checking on {SiteName}.", clientSiteNames);
+                logger.Error(ex, "Exception while checking on {SiteName}.", clientSiteNames);
             }
         }
 
@@ -56,7 +56,7 @@ namespace SiteLinkSynchronizer
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Exception while checking on {SiteName}.", clientSiteName);
+                logger.Error(ex, "Exception while checking on {SiteName}.", clientSiteName);
             }
         }
 
@@ -75,7 +75,7 @@ namespace SiteLinkSynchronizer
                 }
             }
             var endTime = DateTime.UtcNow - TimeSpan.FromMinutes(1);
-            logger.LogDebug("Checking on site: {Site}, Timestamp: {Timestamp1} ~ {Timestamp2} ({Duration:G}), LastLogId: {StartLogId}, {Flags}",
+            logger.Debug("Checking on site: {Site}, Timestamp: {Timestamp1} ~ {Timestamp2} ({Duration:G}), LastLogId: {StartLogId}, {Flags}",
                 clientSiteName, startTime, endTime, endTime - startTime, lastLogId, WhatIf ? "[W]" : null);
             IAsyncEnumerable<LogEventItem> logEvents = null;
             if (client.SiteInfo.Version >= new Version(1, 24))
@@ -166,7 +166,7 @@ namespace SiteLinkSynchronizer
                         var newTitle = logEvent.Params.TargetTitle;
                         if (id != null)
                         {
-                            logger.LogInformation("{ItemId} on {Site}: {UserName} moved [[{OldTitle}]] -> [[{NewTitle}]]. {Flags}",
+                            logger.Information("{ItemId} on {Site}: {UserName} moved [[{OldTitle}]] -> [[{NewTitle}]]. {Flags}",
                                 id, clientSiteName, logEvent.UserName, logEvent.Title, newTitle,
                                 logEvent.Params.SuppressRedirect ? "[SuppressRedirect]" : "");
                         }
@@ -178,7 +178,7 @@ namespace SiteLinkSynchronizer
                     {
                         if (id != null)
                         {
-                            logger.LogInformation("{ItemId} on {Site}: {UserName} deleted [[{OldTitle}]]",
+                            logger.Information("{ItemId} on {Site}: {UserName} deleted [[{OldTitle}]]",
                                 id, clientSiteName, logEvent.UserName, logEvent.Title);
                         }
                         articleState.Delete(logEvent.Title,
@@ -204,7 +204,7 @@ namespace SiteLinkSynchronizer
             int updateCounter = 0;
             foreach (var op in articleState.EnumEntityOperations())
             {
-                logger.LogDebug("Change site link of {EntityId} on {SiteName}: [[{OldTitle}]] -> [[{NewTitle}]]",
+                logger.Debug("Change site link of {EntityId} on {SiteName}: [[{OldTitle}]] -> [[{NewTitle}]]",
                     op.EntityId, clientSiteName, op.OldArticleTitle, op.ArticleTitle);
                 var entity = new Entity(repos, op.EntityId);
                 if (!WhatIf)
@@ -222,14 +222,14 @@ namespace SiteLinkSynchronizer
 
             if (updateCounter == 0)
             {
-                logger.LogDebug("No updates for {SiteName}.", clientSiteName);
+                logger.Debug("No updates for {SiteName}.", clientSiteName);
             }
             else
             {
                 if (WhatIf)
-                    logger.LogInformation("Should update {Count} site links for {SiteName}.", updateCounter, clientSiteName);
+                    logger.Information("Should update {Count} site links for {SiteName}.", updateCounter, clientSiteName);
                 else
-                    logger.LogInformation("Updated {Count} site links for {SiteName}.", updateCounter, clientSiteName);
+                    logger.Information("Updated {Count} site links for {SiteName}.", updateCounter, clientSiteName);
             }
         }
     }

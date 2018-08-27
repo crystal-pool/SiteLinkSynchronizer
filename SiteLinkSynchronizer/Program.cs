@@ -3,7 +3,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SiteLinkSynchronizer.Configuration;
 using SiteLinkSynchronizer.States;
@@ -11,6 +10,7 @@ using WikiClientLibrary;
 using WikiClientLibrary.Bots;
 using WikiClientLibrary.Client;
 using WikiClientLibrary.Sites;
+using Serilog;
 
 namespace SiteLinkSynchronizer
 {
@@ -29,11 +29,10 @@ namespace SiteLinkSynchronizer
             services.Configure<StateStoreConfig>(config.GetSection("StateStore"));
             services.Configure<DiscordBotLoggerConfig>(config.GetSection("DiscordLogger"));
 
-            services.AddLogging(builder => builder
-                .SetMinimumLevel(LogLevel.Information)
-                .AddConsole()
-                .AddDiscordBotLogger()
-            );
+            services.AddSingleton<ILogger>(provider => new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Console()
+                .CreateLogger());
 
             services.AddSingleton<StateStore>();
 
@@ -46,7 +45,7 @@ namespace SiteLinkSynchronizer
             services.AddSingleton<IWikiFamily>(sp =>
             {
                 var opt = sp.GetRequiredService<IOptions<WikiSitesConfig>>();
-                var inst = new MyWikiFamily(sp.GetRequiredService<IWikiClient>(), sp.GetRequiredService<ILoggerFactory>());
+                var inst = new MyWikiFamily(sp.GetRequiredService<IWikiClient>(), sp.GetRequiredService<ILogger>());
                 foreach (var site in opt.Value.WikiSites)
                 {
                     inst.Register(site.Key, site.Value.ApiEndpoint);
