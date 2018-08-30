@@ -24,6 +24,10 @@ Put your password here. This file should be ignored by git.
       "Password": "password here"
     }
   }
+  "DiscordWebhook": {
+    "Id": your Discord webhook id,
+    "Token": "your Discord webhook token"
+  }
 }
 ```
 
