@@ -31,7 +31,7 @@ namespace SiteLinkSynchronizer
             services.AddSingleton<DiscordWebhookMessenger>();
 
             services.AddSingleton<ILogger>(provider => new LoggerConfiguration()
-                .MinimumLevel.Debug()
+                .MinimumLevel.Information()
                 .Enrich.FromLogContext()
                 .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level:u3}]{SourceContext}: {Message:l}{NewLine}{Exception}")
                 .CreateLogger());

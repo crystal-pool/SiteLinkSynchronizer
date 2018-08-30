@@ -10,7 +10,7 @@ namespace SiteLinkSynchronizer
     internal static class MarkdownUtility
     {
 
-        private static readonly char[] markdownEscapedCharacters = @"|*#{}[]".ToCharArray();
+        private static readonly char[] markdownEscapedCharacters = @"|*#{}[]()".ToCharArray();
         private static readonly Regex markdownEscapedCharactersMatcher = new Regex("[" + Regex.Escape(new string(markdownEscapedCharacters)) + "]");
 
         public static string Escape(string text)

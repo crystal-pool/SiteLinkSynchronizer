@@ -243,13 +243,13 @@ namespace SiteLinkSynchronizer
             {
                 if (WhatIf)
                 {
-                    logger.Information("Should update {Count} site links for {SiteName}.", updateCounter, clientSiteName);
-                    messenger.PushMessage("Should update {0} site links for {1}.", updateCounter, clientSiteName);
+                    logger.Information("Should update {Count} site link(s) for {SiteName}.", updateCounter, clientSiteName);
+                    messenger.PushMessage("Should update {0} site link(s) for {1}.", updateCounter, clientSiteName);
                 }
                 else
                 {
-                    logger.Information("Updated {Count} site links for {SiteName}.", updateCounter, clientSiteName);
-                    messenger.PushMessage("Updated {0} site links for {1}.", updateCounter, clientSiteName);
+                    logger.Information("Updated {Count} site link(s) for {SiteName}.", updateCounter, clientSiteName);
+                    messenger.PushMessage("Updated {0} site link(s) for {1}.", updateCounter, clientSiteName);
                 }
             }
         }
