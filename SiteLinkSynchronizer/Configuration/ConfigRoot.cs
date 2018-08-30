@@ -41,18 +41,7 @@ namespace SiteLinkSynchronizer.Configuration
 
     }
 
-    public class DiscordBotLoggerConfig
-    {
-        /// <summary>
-        /// Discord Bot token for logging.
-        /// </summary>
-        public string Token { get; set; }
-
-        public ulong ChannelId { get; set; }
-
-    }
-
-    public class DiscordWebhookLoggerConfig
+    public class DiscordWebhookConfig
     {
 
         public string Token { get; set; }

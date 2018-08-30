@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Serilog;
+using Serilog.Core;
 
 namespace SiteLinkSynchronizer
 {
@@ -20,7 +21,7 @@ namespace SiteLinkSynchronizer
         
         public SiteArticleStateContainer(string name, ILogger logger)
         {
-            this.logger = logger.ForContext<SiteArticleStateContainer>();
+            this.logger = logger.ForContext(Constants.SourceContextPropertyName, "StateContainer");
             Name = name;
         }
 

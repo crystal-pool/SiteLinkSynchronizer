@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Serilog;
+using Serilog.Core;
 using SiteLinkSynchronizer.States;
+using WikiClientLibrary;
 using WikiClientLibrary.Generators;
 using WikiClientLibrary.Sites;
 using WikiClientLibrary.Wikibase;
@@ -16,14 +18,16 @@ namespace SiteLinkSynchronizer
 
         private readonly IWikiFamily family;
         private readonly StateStore stateStore;
+        private readonly DiscordWebhookMessenger messenger;
         private readonly ILogger logger;
 
-        public BySiteLinkSynchronizer(ILogger rootLogger, IWikiFamily family, StateStore stateStore)
+        public BySiteLinkSynchronizer(ILogger rootLogger, IWikiFamily family, StateStore stateStore, DiscordWebhookMessenger messenger)
         {
             if (family == null) throw new ArgumentNullException(nameof(family));
-            logger = rootLogger.ForContext<BySiteLinkSynchronizer>();
+            logger = rootLogger.ForContext(Constants.SourceContextPropertyName, "LinkSynchronizer");
             this.family = family;
             this.stateStore = stateStore;
+            this.messenger = messenger;
         }
 
         public string RepositorySiteName { get; set; }
@@ -35,16 +39,10 @@ namespace SiteLinkSynchronizer
         public async Task CheckRecentLogsSafeAsync(ICollection<string> clientSiteNames, ICollection<int> namespaces)
         {
             logger.Information("Checking on {SiteCount} site(s), {Flags}", clientSiteNames.Count, WhatIf ? "[WhatIf]" : null);
-            try
+            messenger.PushMessage("Checking on {0} site(s). {1}", clientSiteNames.Count, WhatIf ? "[WhatIf]" : null);
+            foreach (var clientSiteName in clientSiteNames)
             {
-                foreach (var clientSiteName in clientSiteNames)
-                {
-                    await CheckRecentLogsSafeAsync(clientSiteName, namespaces);
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Exception while checking on {SiteName}.", clientSiteNames);
+                await CheckRecentLogsSafeAsync(clientSiteName, namespaces);
             }
         }
 
@@ -57,12 +55,14 @@ namespace SiteLinkSynchronizer
             catch (Exception ex)
             {
                 logger.Error(ex, "Exception while checking on {SiteName}.", clientSiteName);
+                messenger.PushMessage("Exception while checking on {0}. {1}: {2}", clientSiteName, ex.GetType(), ex.Message);
             }
         }
 
         public async Task CheckRecentLogsAsync(string clientSiteName, ICollection<int> namespaces)
         {
             var repos = await family.GetSiteAsync(RepositorySiteName);
+            var reposSiteInfo = WikibaseSiteInfo.FromSiteInfo(repos.SiteInfo);
             var client = await family.GetSiteAsync(clientSiteName);
             var startTime = MinLastCheckedTime;
             var lastLogId = -1;
@@ -167,8 +167,17 @@ namespace SiteLinkSynchronizer
                         if (id != null)
                         {
                             logger.Information("{ItemId} on {Site}: {UserName} moved [[{OldTitle}]] -> [[{NewTitle}]]. {Flags}",
-                                id, clientSiteName, logEvent.UserName, logEvent.Title, newTitle,
+                                id, clientSiteName, logEvent.UserName,
+                                logEvent.Title, newTitle,
                                 logEvent.Params.SuppressRedirect ? "[SuppressRedirect]" : "");
+                            messenger.PushMessage("{0} on {1}: {2:u} {3} moved ~~{4}~~ to {5}. {6}",
+                                MarkdownUtility.MakeLink(id, reposSiteInfo.MakeEntityUri(id)),
+                                clientSiteName,
+                                logEvent.TimeStamp,
+                                Utility.MdMakeUserLink(client, logEvent.UserName),
+                                Utility.MdMakeArticleLink(client, logEvent.Title),
+                                Utility.MdMakeArticleLink(client, newTitle),
+                                logEvent.Params.SuppressRedirect ? "Redirect is suppressed." : "");
                         }
                         articleState.Move(logEvent.Title, newTitle, logEvent.Params.SuppressRedirect,
                             string.Format("/* clientsitelink-update:0|{0}|{0}:{1}|{0}:{2} */ UserName={3}, LogId={4}",
@@ -180,6 +189,12 @@ namespace SiteLinkSynchronizer
                         {
                             logger.Information("{ItemId} on {Site}: {UserName} deleted [[{OldTitle}]]",
                                 id, clientSiteName, logEvent.UserName, logEvent.Title);
+                            messenger.PushMessage("{0} on {1}: {2:u} {3} deleted ~~{4}~~.",
+                                MarkdownUtility.MakeLink(id, reposSiteInfo.MakeEntityUri(id)),
+                                clientSiteName,
+                                logEvent.TimeStamp,
+                                Utility.MdMakeUserLink(client, logEvent.UserName),
+                                Utility.MdMakeArticleLink(client, logEvent.Title));
                         }
                         articleState.Delete(logEvent.Title,
                             string.Format("/* clientsitelink-remove:1||{0} */ UserName={1}, LogId={2}",
@@ -227,9 +242,15 @@ namespace SiteLinkSynchronizer
             else
             {
                 if (WhatIf)
+                {
                     logger.Information("Should update {Count} site links for {SiteName}.", updateCounter, clientSiteName);
+                    messenger.PushMessage("Should update {0} site links for {1}.", updateCounter, clientSiteName);
+                }
                 else
+                {
                     logger.Information("Updated {Count} site links for {SiteName}.", updateCounter, clientSiteName);
+                    messenger.PushMessage("Updated {0} site links for {1}.", updateCounter, clientSiteName);
+                }
             }
         }
     }

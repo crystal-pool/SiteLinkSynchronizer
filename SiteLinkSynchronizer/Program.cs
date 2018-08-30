@@ -27,11 +27,13 @@ namespace SiteLinkSynchronizer
             services.Configure<WikiSitesConfig>(config);
             services.Configure<SynchronizerConfig>(config.GetSection("Synchronizer"));
             services.Configure<StateStoreConfig>(config.GetSection("StateStore"));
-            services.Configure<DiscordBotLoggerConfig>(config.GetSection("DiscordLogger"));
+            services.Configure<DiscordWebhookConfig>(config.GetSection("DiscordWebhook"));
+            services.AddSingleton<DiscordWebhookMessenger>();
 
             services.AddSingleton<ILogger>(provider => new LoggerConfiguration()
                 .MinimumLevel.Debug()
-                .WriteTo.Console()
+                .Enrich.FromLogContext()
+                .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level:u3}]{SourceContext}: {Message:l}{NewLine}{Exception}")
                 .CreateLogger());
 
             services.AddSingleton<StateStore>();

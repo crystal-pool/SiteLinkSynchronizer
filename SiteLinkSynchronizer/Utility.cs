@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
 using AsyncEnumerableExtensions;
+using WikiClientLibrary;
 using WikiClientLibrary.Generators;
+using WikiClientLibrary.Sites;
 
 namespace SiteLinkSynchronizer
 {
@@ -39,6 +42,22 @@ namespace SiteLinkSynchronizer
                     }
                 }
             });
+        }
+
+        public static string MdMakeUserLink(WikiSite site, string userName)
+        {
+            var link = WikiLink.Parse(site, userName, BuiltInNamespaces.User);
+            var talkLink = WikiLink.Parse(site, userName, BuiltInNamespaces.UserTalk);
+            var contribLink = site.SiteInfo.MakeArticleUrl("Special:Contribs/" + userName);
+            return string.Format("{0} ({1}|{2})",
+                MarkdownUtility.MakeLink(link.Title, link.TargetUrl),
+                MarkdownUtility.MakeLink("T", talkLink.TargetUrl),
+                MarkdownUtility.MakeLink("C", contribLink));
+        }
+
+        public static string MdMakeArticleLink(WikiSite site, string title)
+        {
+            return MarkdownUtility.MakeLink(title, site.SiteInfo.MakeArticleUrl(title));
         }
 
     }
