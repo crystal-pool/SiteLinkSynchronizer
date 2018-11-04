@@ -214,8 +214,6 @@ namespace SiteLinkSynchronizer
                 }
             }
 
-            if (!WhatIf)
-                stateStore.LeaveTrace(clientSiteName, endTime, processedLogId);
             int updateCounter = 0;
             foreach (var op in articleState.EnumEntityOperations())
             {
@@ -234,6 +232,9 @@ namespace SiteLinkSynchronizer
 
                 updateCounter++;
             }
+
+            if (!WhatIf)
+                stateStore.LeaveTrace(clientSiteName, endTime, processedLogId);
 
             if (updateCounter == 0)
             {
