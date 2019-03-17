@@ -25,7 +25,8 @@ namespace SiteLinkSynchronizer
             sb.Append('[');
             sb.Append(Escape(text));
             sb.Append("](<");
-            sb.Append(Escape(url));
+            // Discord will simply ignore `\)` in the link content.
+            sb.Append(url.Replace("(", "%28").Replace(")", "%29"));
             sb.Append(">)");
             return sb.ToString();
         }
