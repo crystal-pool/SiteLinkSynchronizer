@@ -78,7 +78,7 @@ namespace SiteLinkSynchronizer
             logger.Debug("Checking on site: {Site}, Timestamp: {Timestamp1} ~ {Timestamp2} ({Duration:G}), LastLogId: {StartLogId}, {Flags}",
                 clientSiteName, startTime, endTime, endTime - startTime, lastLogId, WhatIf ? "[W]" : null);
             IAsyncEnumerable<LogEventItem> logEvents = null;
-            if (client.SiteInfo.Version >= new Version(1, 24))
+            if (client.SiteInfo.Version >= new MediaWikiVersion(1, 24))
             {
                 foreach (var ns in namespaces)
                 {
