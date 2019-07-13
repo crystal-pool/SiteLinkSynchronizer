@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -32,7 +33,9 @@ namespace SiteLinkSynchronizer
 
         public string RepositorySiteName { get; set; }
 
-        public DateTime MinLastCheckedTime { get; set; } = DateTime.UtcNow - TimeSpan.FromDays(30);
+        public TimeSpan MaxCheckDuration { get; set; } = TimeSpan.FromDays(60);
+
+        public TimeSpan StatusReportInterval { get; set; } = TimeSpan.FromMinutes(5);
 
         public bool WhatIf { get; set; }
 
@@ -64,7 +67,7 @@ namespace SiteLinkSynchronizer
             var repos = await family.GetSiteAsync(RepositorySiteName);
             var reposSiteInfo = WikibaseSiteInfo.FromSiteInfo(repos.SiteInfo);
             var client = await family.GetSiteAsync(clientSiteName);
-            var startTime = MinLastCheckedTime;
+            var startTime = DateTime.UtcNow - MaxCheckDuration;
             var lastLogId = -1;
             {
                 var trace = stateStore.GetTrace(clientSiteName);
@@ -75,8 +78,16 @@ namespace SiteLinkSynchronizer
                 }
             }
             var endTime = DateTime.UtcNow - TimeSpan.FromMinutes(1);
-            logger.Debug("Checking on site: {Site}, Timestamp: {Timestamp1} ~ {Timestamp2} ({Duration:G}), LastLogId: {StartLogId}, {Flags}",
+            if (endTime - startTime > MaxCheckDuration)
+            {
+                logger.Warning("Max check duration reached on {Site}.", clientSiteName);
+                messenger.PushMessage("Max check duration reached on {0}.", clientSiteName);
+                endTime = startTime + MaxCheckDuration;
+            }
+            logger.Information("Checking on site: {Site}, Timestamp: {Timestamp1} ~ {Timestamp2} ({Duration:G}), LastLogId: {StartLogId}, {Flags}",
                 clientSiteName, startTime, endTime, endTime - startTime, lastLogId, WhatIf ? "[W]" : null);
+            var elapsedSw = Stopwatch.StartNew();
+            var statusReportSw = Stopwatch.StartNew();
             IAsyncEnumerable<LogEventItem> logEvents = null;
             if (client.SiteInfo.Version >= new MediaWikiVersion(1, 24))
             {
@@ -89,7 +100,7 @@ namespace SiteLinkSynchronizer
                         TimeAscending = true,
                         NamespaceId = ns,
                         LogType = LogTypes.Move,
-                        PaginationSize = 100,
+                        PaginationSize = 200,
                     };
                     var deleteList = new LogEventsList(client)
                     {
@@ -98,7 +109,7 @@ namespace SiteLinkSynchronizer
                         TimeAscending = true,
                         NamespaceId = ns,
                         LogType = LogTypes.Delete,
-                        PaginationSize = 100,
+                        PaginationSize = 200,
                     };
                     if (logEvents == null)
                         logEvents = moveList.EnumItemsAsync();
@@ -116,7 +127,7 @@ namespace SiteLinkSynchronizer
                     EndTime = endTime,
                     TimeAscending = true,
                     LogType = LogTypes.Move,
-                    PaginationSize = 100,
+                    PaginationSize = 200,
                 };
                 var deleteList = new LogEventsList(client)
                 {
@@ -124,7 +135,7 @@ namespace SiteLinkSynchronizer
                     EndTime = endTime,
                     TimeAscending = true,
                     LogType = LogTypes.Delete,
-                    PaginationSize = 100,
+                    PaginationSize = 200,
                 };
                 logEvents = moveList.EnumItemsAsync().Where(e => namespaces.Contains(e.NamespaceId))
                     .OrderedMerge(deleteList.EnumItemsAsync().Where(e => namespaces.Contains(e.NamespaceId)), LogEventItemTimeStampComparer.Default);
@@ -201,16 +212,27 @@ namespace SiteLinkSynchronizer
                                 clientSiteName, logEvent.UserName, logEvent.LogId));
                     }
                 }
-
             }
 
             var processedLogId = lastLogId;
+            var processedLogCount = 0;
+
             using (var ie = logEvents.Buffer(100).GetEnumerator())
             {
                 while (await ie.MoveNext())
                 {
                     await ProcessBatch(ie.Current);
                     processedLogId = ie.Current.Last().LogId;
+                    processedLogCount += ie.Current.Count;
+                    if (statusReportSw.Elapsed >= StatusReportInterval)
+                    {
+                        var processedLogTimestamp = ie.Current.Last().TimeStamp;
+                        logger.Information("Processed {LogCount} logs on {Site} used {TimeSpan}, last log timestamp: {Timestamp}.",
+                            processedLogCount, clientSiteName, elapsedSw.Elapsed, processedLogTimestamp);
+                        messenger.PushMessage("Processed {0} logs on {1} used {2:g}, last at: {3:u}.",
+                            processedLogCount, clientSiteName, elapsedSw.Elapsed, processedLogTimestamp);
+                        statusReportSw.Restart();
+                    }
                 }
             }
 
