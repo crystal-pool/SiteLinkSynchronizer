@@ -47,6 +47,9 @@ namespace SiteLinkSynchronizer
             {
                 await CheckRecentLogsSafeAsync(clientSiteName, namespaces);
             }
+            logger.Information("Checking finished.");
+            messenger.PushMessage("Checking finished.");
+
         }
 
         public async Task CheckRecentLogsSafeAsync(string clientSiteName, ICollection<int> namespaces)
@@ -59,6 +62,10 @@ namespace SiteLinkSynchronizer
             {
                 logger.Error(ex, "Exception while checking on {SiteName}.", clientSiteName);
                 messenger.PushMessage("Exception while checking on {0}. {1}: {2}", clientSiteName, ex.GetType(), ex.Message);
+                if (ex is MediaWikiRemoteException remoteEx && !string.IsNullOrEmpty(remoteEx.RemoteStackTrace))
+                {
+                    messenger.PushMessage("Remote stack trace: " + remoteEx.RemoteStackTrace);
+                }
             }
         }
 
@@ -84,8 +91,10 @@ namespace SiteLinkSynchronizer
                 messenger.PushMessage("Max check duration reached on {0}.", clientSiteName);
                 endTime = startTime + MaxCheckDuration;
             }
-            logger.Information("Checking on site: {Site}, Timestamp: {Timestamp1} ~ {Timestamp2} ({Duration:G}), LastLogId: {StartLogId}, {Flags}",
+            logger.Information("Checking on {Site}, {Timestamp1} ~ {Timestamp2} ({Duration:G}), LastLogId: {StartLogId}, {Flags}",
                 clientSiteName, startTime, endTime, endTime - startTime, lastLogId, WhatIf ? "[W]" : null);
+            messenger.PushMessage("Checking on {0}, {1:u} ~ {2:u} ({3:g}) {4}",
+                clientSiteName, startTime, endTime, endTime - startTime, WhatIf ? "[W]" : null);
             var elapsedSw = Stopwatch.StartNew();
             var statusReportSw = Stopwatch.StartNew();
             IAsyncEnumerable<LogEventItem> logEvents = null;
