@@ -33,7 +33,15 @@ namespace SiteLinkSynchronizer
 
         public string RepositorySiteName { get; set; }
 
-        public TimeSpan MaxCheckDuration { get; set; } = TimeSpan.FromDays(60);
+        /// <summary>
+        /// For how far ago can we set our earliest StartTime.
+        /// </summary>
+        public TimeSpan MaxTracebackDuration { get; set; } = TimeSpan.FromDays(90);
+
+        /// <summary>
+        /// For how long in time can we check for logs during each session.
+        /// </summary>
+        public TimeSpan MaxCheckDuration { get; set; } = TimeSpan.FromDays(7);
 
         public TimeSpan StatusReportInterval { get; set; } = TimeSpan.FromMinutes(5);
 
@@ -74,7 +82,7 @@ namespace SiteLinkSynchronizer
             var repos = await family.GetSiteAsync(RepositorySiteName);
             var reposSiteInfo = WikibaseSiteInfo.FromSiteInfo(repos.SiteInfo);
             var client = await family.GetSiteAsync(clientSiteName);
-            var startTime = DateTime.UtcNow - MaxCheckDuration;
+            var startTime = DateTime.UtcNow - MaxTracebackDuration;
             var lastLogId = -1;
             {
                 var trace = stateStore.GetTrace(clientSiteName);
@@ -93,8 +101,8 @@ namespace SiteLinkSynchronizer
             }
             logger.Information("Checking on {Site}, {Timestamp1} ~ {Timestamp2} ({Duration:G}), LastLogId: {StartLogId}, {Flags}",
                 clientSiteName, startTime, endTime, endTime - startTime, lastLogId, WhatIf ? "[W]" : null);
-            messenger.PushMessage("Checking on {0}, {1:u} ~ {2:u} ({3:g}) {4}",
-                clientSiteName, startTime, endTime, endTime - startTime, WhatIf ? "[W]" : null);
+            //messenger.PushMessage("Checking on {0}, {1:u} ~ {2:u} ({3:g}) {4}",
+            //    clientSiteName, startTime, endTime, endTime - startTime, WhatIf ? "[W]" : null);
             var elapsedSw = Stopwatch.StartNew();
             var statusReportSw = Stopwatch.StartNew();
             IAsyncEnumerable<LogEventItem> logEvents = null;
