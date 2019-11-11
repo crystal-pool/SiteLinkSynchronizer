@@ -166,7 +166,7 @@ namespace SiteLinkSynchronizer
             async Task FetchTitleIds(IEnumerable<string> titles)
             {
                 var workTitles = titles.Where(t => !articleState.ContainsArticleTitle(t)).ToList();
-                var ids = await Entity.IdsFromSiteLinksAsync(repos, clientSiteName, workTitles).ToList();
+                var ids = await Entity.IdsFromSiteLinksAsync(repos, clientSiteName, workTitles).ToListAsync();
                 for (int i = 0; i < workTitles.Count; i++)
                 {
                     if (ids[i] != null)
@@ -234,22 +234,19 @@ namespace SiteLinkSynchronizer
             var processedLogId = lastLogId;
             var processedLogCount = 0;
 
-            using (var ie = logEvents.Buffer(100).GetEnumerator())
+            await foreach (var batch in logEvents.Buffer(100))
             {
-                while (await ie.MoveNext())
+                await ProcessBatch(batch);
+                processedLogId = batch.Last().LogId;
+                processedLogCount += batch.Count;
+                if (statusReportSw.Elapsed >= StatusReportInterval)
                 {
-                    await ProcessBatch(ie.Current);
-                    processedLogId = ie.Current.Last().LogId;
-                    processedLogCount += ie.Current.Count;
-                    if (statusReportSw.Elapsed >= StatusReportInterval)
-                    {
-                        var processedLogTimestamp = ie.Current.Last().TimeStamp;
-                        logger.Information("Processed {LogCount} logs on {Site} used {TimeSpan}, last log timestamp: {Timestamp}.",
-                            processedLogCount, clientSiteName, elapsedSw.Elapsed, processedLogTimestamp);
-                        messenger.PushMessage("Processed {0} logs on {1} used {2:g}, last at: {3:u}.",
-                            processedLogCount, clientSiteName, elapsedSw.Elapsed, processedLogTimestamp);
-                        statusReportSw.Restart();
-                    }
+                    var processedLogTimestamp = batch.Last().TimeStamp;
+                    logger.Information("Processed {LogCount} logs on {Site} used {TimeSpan}, last log timestamp: {Timestamp}.",
+                        processedLogCount, clientSiteName, elapsedSw.Elapsed, processedLogTimestamp);
+                    messenger.PushMessage("Processed {0} logs on {1} used {2:g}, last at: {3:u}.",
+                        processedLogCount, clientSiteName, elapsedSw.Elapsed, processedLogTimestamp);
+                    statusReportSw.Restart();
                 }
             }
 

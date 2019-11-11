@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using AsyncEnumerableExtensions;
 using WikiClientLibrary;
 using WikiClientLibrary.Generators;
@@ -16,32 +18,28 @@ namespace SiteLinkSynchronizer
         /// <summary>
         /// Merge two ordered sequence.
         /// </summary>
-        public static IAsyncEnumerable<T> OrderedMerge<T>(this IAsyncEnumerable<T> elements1, IAsyncEnumerable<T> elements2, IComparer<T> comparer)
+        public static async IAsyncEnumerable<T> OrderedMerge<T>(this IAsyncEnumerable<T> elements1, IAsyncEnumerable<T> elements2, IComparer<T> comparer,
+            [EnumeratorCancellation]CancellationToken ct = default)
         {
             if (elements1 == null) throw new ArgumentNullException(nameof(elements1));
             if (elements2 == null) throw new ArgumentNullException(nameof(elements2));
-            return AsyncEnumerableFactory.FromAsyncGenerator<T>(async (sink, ct) =>
+            await using var e1 = elements1.GetAsyncEnumerator(ct);
+            await using var e2 = elements2.GetAsyncEnumerator(ct);
+            var next1 = await e1.MoveNextAsync(ct);
+            var next2 = await e2.MoveNextAsync(ct);
+            while (next1 || next2)
             {
-                using (var e1 = elements1.GetEnumerator())
-                using (var e2 = elements2.GetEnumerator())
+                if (!next2 || next1 && comparer.Compare(e1.Current, e2.Current) <= 0)
                 {
-                    var next1 = await e1.MoveNext(ct);
-                    var next2 = await e2.MoveNext(ct);
-                    while (next1 || next2)
-                    {
-                        if (!next2 || next1 && comparer.Compare(e1.Current, e2.Current) <= 0)
-                        {
-                            await sink.YieldAndWait(e1.Current);
-                            next1 = await e1.MoveNext(ct);
-                        }
-                        else
-                        {
-                            await sink.YieldAndWait(e2.Current);
-                            next2 = await e2.MoveNext(ct);
-                        }
-                    }
+                    yield return e1.Current;
+                    next1 = await e1.MoveNextAsync(ct);
                 }
-            });
+                else
+                {
+                    yield return e2.Current;
+                    next2 = await e2.MoveNextAsync(ct);
+                }
+            }
         }
 
         public static string MdMakeUserLink(WikiSite site, string userName)
