@@ -106,6 +106,7 @@ namespace SiteLinkSynchronizer
             var elapsedSw = Stopwatch.StartNew();
             var statusReportSw = Stopwatch.StartNew();
             var processedRawLogCount = 0;
+            var processedRawLogTimestamp = DateTime.MinValue;
             var processedLogCount = 0;
             var processedLogTimestamp = DateTime.MinValue;
 
@@ -113,10 +114,10 @@ namespace SiteLinkSynchronizer
             {
                 if (statusReportSw.Elapsed >= StatusReportInterval)
                 {
-                    logger.Information("Processed {LogCount} ({RawLogCount} raw) logs on {Site} used {TimeSpan}, last log timestamp: {Timestamp}.",
-                        processedLogCount, processedRawLogCount, clientSiteName, elapsedSw.Elapsed, processedLogTimestamp);
-                    messenger.PushMessage("Processed {0} ({1} raw) logs on {2} used {3:g}, last at: {4:u}.",
-                        processedLogCount, processedRawLogCount, clientSiteName, elapsedSw.Elapsed, processedLogTimestamp);
+                    logger.Information("Processed {LogCount} ({RawLogCount} raw) logs on {Site} used {TimeSpan}, last log timestamp: {Timestamp} ({RawTimestamp} raw).",
+                        processedLogCount, processedRawLogCount, clientSiteName, elapsedSw.Elapsed, processedLogTimestamp, processedRawLogTimestamp);
+                    messenger.PushMessage("Processed {0} ({1} raw) logs on {2} used {3:g}, last at: {4:u} ({5:u} raw).",
+                        processedLogCount, processedRawLogCount, clientSiteName, elapsedSw.Elapsed, processedLogTimestamp, processedRawLogTimestamp);
                     statusReportSw.Restart();
                 }
             }
@@ -174,6 +175,7 @@ namespace SiteLinkSynchronizer
                     .Select((e, i) =>
                     {
                         processedRawLogCount = i;
+                        processedRawLogTimestamp = e.TimeStamp;
                         CheckReportStatus();
                         return e;
                     })
