@@ -105,6 +105,22 @@ namespace SiteLinkSynchronizer
             //    clientSiteName, startTime, endTime, endTime - startTime, WhatIf ? "[W]" : null);
             var elapsedSw = Stopwatch.StartNew();
             var statusReportSw = Stopwatch.StartNew();
+            var processedRawLogCount = 0;
+            var processedLogCount = 0;
+            var processedLogTimestamp = DateTime.MinValue;
+
+            void CheckReportStatus()
+            {
+                if (statusReportSw.Elapsed >= StatusReportInterval)
+                {
+                    logger.Information("Processed {LogCount} ({RawLogCount} raw) logs on {Site} used {TimeSpan}, last log timestamp: {Timestamp}.",
+                        processedLogCount, processedRawLogCount, clientSiteName, elapsedSw.Elapsed, processedLogTimestamp);
+                    messenger.PushMessage("Processed {0} ({1} raw) logs on {2} used {3:g}, last at: {4:u}.",
+                        processedLogCount, processedRawLogCount, clientSiteName, elapsedSw.Elapsed, processedLogTimestamp);
+                    statusReportSw.Restart();
+                }
+            }
+
             IAsyncEnumerable<LogEventItem> logEvents = null;
             if (client.SiteInfo.Version >= new MediaWikiVersion(1, 24))
             {
@@ -137,7 +153,7 @@ namespace SiteLinkSynchronizer
             }
             else
             {
-                // Does not support LogEventsList.NamespaceId
+                // MW 1.19 does not support LogEventsList.NamespaceId. Pity.
                 var moveList = new LogEventsList(client)
                 {
                     StartTime = startTime,
@@ -154,7 +170,14 @@ namespace SiteLinkSynchronizer
                     LogType = LogTypes.Delete,
                     PaginationSize = 200,
                 };
-                logEvents = moveList.EnumItemsAsync().Where(e => namespaces.Contains(e.NamespaceId))
+                logEvents = moveList.EnumItemsAsync()
+                    .Select((e, i) =>
+                    {
+                        processedRawLogCount = i;
+                        CheckReportStatus();
+                        return e;
+                    })
+                    .Where(e => namespaces.Contains(e.NamespaceId))
                     .OrderedMerge(deleteList.EnumItemsAsync().Where(e => namespaces.Contains(e.NamespaceId)), LogEventItemTimeStampComparer.Default);
             }
 
@@ -232,22 +255,14 @@ namespace SiteLinkSynchronizer
             }
 
             var processedLogId = lastLogId;
-            var processedLogCount = 0;
 
             await foreach (var batch in logEvents.Buffer(100))
             {
                 await ProcessBatch(batch);
                 processedLogId = batch.Last().LogId;
+                processedLogTimestamp = batch.Last().TimeStamp;
                 processedLogCount += batch.Count;
-                if (statusReportSw.Elapsed >= StatusReportInterval)
-                {
-                    var processedLogTimestamp = batch.Last().TimeStamp;
-                    logger.Information("Processed {LogCount} logs on {Site} used {TimeSpan}, last log timestamp: {Timestamp}.",
-                        processedLogCount, clientSiteName, elapsedSw.Elapsed, processedLogTimestamp);
-                    messenger.PushMessage("Processed {0} logs on {1} used {2:g}, last at: {3:u}.",
-                        processedLogCount, clientSiteName, elapsedSw.Elapsed, processedLogTimestamp);
-                    statusReportSw.Restart();
-                }
+                CheckReportStatus();
             }
 
             int updateCounter = 0;
