@@ -8,7 +8,7 @@ using SQLite;
 
 namespace SiteLinkSynchronizer.States
 {
-    public class StateStore : IDisposable
+    public sealed class StateStore : IDisposable
     {
 
         public StateStore(IOptions<StateStoreConfig> stateStoreConfig)

@@ -16,7 +16,7 @@ using WikiClientLibrary;
 
 namespace SiteLinkSynchronizer
 {
-    public class DiscordWebhookMessenger : IDisposable
+    public sealed class DiscordWebhookMessenger : IDisposable
     {
 
         private readonly ulong webhookId;
