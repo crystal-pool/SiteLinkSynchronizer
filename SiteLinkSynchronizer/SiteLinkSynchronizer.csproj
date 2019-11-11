@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageSource Include="https://www.myget.org/F/discord-net/api/v3/index.json" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="CXuesong.MW.MwParserFromScratch" Version="0.2.1" />
     <PackageReference Include="CXuesong.MW.WikiClientLibrary" Version="0.7.0-int.6" />
     <PackageReference Include="CXuesong.MW.WikiClientLibrary.Bots" Version="0.1.0-int0" />
