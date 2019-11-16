@@ -9,6 +9,7 @@ using Serilog.Core;
 using SiteLinkSynchronizer.States;
 using WikiClientLibrary;
 using WikiClientLibrary.Generators;
+using WikiClientLibrary.Generators.Primitive;
 using WikiClientLibrary.Sites;
 using WikiClientLibrary.Wikibase;
 
@@ -36,12 +37,12 @@ namespace SiteLinkSynchronizer
         /// <summary>
         /// For how far ago can we set our earliest StartTime.
         /// </summary>
-        public TimeSpan MaxTracebackDuration { get; set; } = TimeSpan.FromDays(90);
+        public TimeSpan MaxTracebackDuration { get; set; } = TimeSpan.FromDays(120);
 
         /// <summary>
         /// For how long in time can we check for logs during each session.
         /// </summary>
-        public TimeSpan MaxCheckDuration { get; set; } = TimeSpan.FromDays(7);
+        public TimeSpan MaxCheckDuration { get; set; } = TimeSpan.FromDays(60);
 
         public TimeSpan StatusReportInterval { get; set; } = TimeSpan.FromMinutes(5);
 
@@ -123,12 +124,14 @@ namespace SiteLinkSynchronizer
             }
 
             IAsyncEnumerable<LogEventItem> logEvents = null;
+            var wikiListCompatOptions = new WikiListCompatibilityOptions { ContinuationLoopBehaviors = WikiListContinuationLoopBehaviors.FetchMore };
             if (client.SiteInfo.Version >= new MediaWikiVersion(1, 24))
             {
                 foreach (var ns in namespaces)
                 {
                     var moveList = new LogEventsList(client)
                     {
+                        CompatibilityOptions = wikiListCompatOptions,
                         StartTime = startTime,
                         EndTime = endTime,
                         TimeAscending = true,
@@ -138,6 +141,7 @@ namespace SiteLinkSynchronizer
                     };
                     var deleteList = new LogEventsList(client)
                     {
+                        CompatibilityOptions = wikiListCompatOptions,
                         StartTime = startTime,
                         EndTime = endTime,
                         TimeAscending = true,
@@ -157,6 +161,7 @@ namespace SiteLinkSynchronizer
                 // MW 1.19 does not support LogEventsList.NamespaceId. Pity.
                 var moveList = new LogEventsList(client)
                 {
+                    CompatibilityOptions = wikiListCompatOptions,
                     StartTime = startTime,
                     EndTime = endTime,
                     TimeAscending = true,
@@ -165,6 +170,7 @@ namespace SiteLinkSynchronizer
                 };
                 var deleteList = new LogEventsList(client)
                 {
+                    CompatibilityOptions = wikiListCompatOptions,
                     StartTime = startTime,
                     EndTime = endTime,
                     TimeAscending = true,
