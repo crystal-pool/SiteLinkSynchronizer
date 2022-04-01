@@ -1,7 +1,7 @@
 ﻿{
   "WikiSites": {
     "crystalpool": { "ApiEndpoint": "https://crystalpool.cxuesong.com/api.php" },
-    "zhwarriorswiki": { "ApiEndpoint": "http://warriors.huijiwiki.com/api.php" },
+    "zhwarriorswiki": { "ApiEndpoint": "https://warriors.huijiwiki.com/api.php" },
     "fiwarriorswiki": { "ApiEndpoint": "https://soturikissat.fandom.com/fi/api.php" },
     "ukwarriorswiki": { "ApiEndpoint": "https://uawarriors.fandom.com/uk/api.php" },
     "nlwarriorswiki": { "ApiEndpoint": "https://warriorcats.fandom.com/nl/api.php" },
