@@ -20,9 +20,8 @@ public class BySiteLinkSynchronizer
 
     public BySiteLinkSynchronizer(ILogger rootLogger, IWikiFamily family, StateStore stateStore, DiscordWebhookMessenger messenger)
     {
-        if (family == null) throw new ArgumentNullException(nameof(family));
         logger = rootLogger.ForContext(Constants.SourceContextPropertyName, "LinkSynchronizer");
-        this.family = family;
+        this.family = family ?? throw new ArgumentNullException(nameof(family));
         this.stateStore = stateStore;
         this.messenger = messenger;
     }

@@ -13,7 +13,8 @@
     "enwarriorswiki": { "ApiEndpoint": "https://warriors.fandom.com/api.php" },
     "dewarriorswiki": { "ApiEndpoint": "https://warrior-cats.fandom.com/de/api.php" },
     "cswarriorswiki": { "ApiEndpoint": "https://valecnici.fandom.com/cs/api.php" },
-    "plwarriorswiki": { "ApiEndpoint": "https://wojownicy.fandom.com/pl/api.php" }
+    "plwarriorswiki": { "ApiEndpoint": "https://wojownicy.fandom.com/pl/api.php" },
+    "kowarriorswiki": { "ApiEndpoint": "https://warriors.fandom.com/ko/api.php" }
   },
   "Synchronizer": {
     "RepositorySite": "crystalpool",
