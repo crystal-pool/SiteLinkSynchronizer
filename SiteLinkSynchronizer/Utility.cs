@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using AsyncEnumerableExtensions;
 using WikiClientLibrary;
 using WikiClientLibrary.Generators;
 using WikiClientLibrary.Sites;
