@@ -1,53 +1,48 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace SiteLinkSynchronizer.Configuration;
 
-namespace SiteLinkSynchronizer.Configuration
+public class WikiSitesConfig
 {
-    public class WikiSitesConfig
-    {
 
-        public IDictionary<string, WikiSiteConfig> WikiSites { get; set; }
+    public IDictionary<string, WikiSiteConfig> WikiSites { get; set; }
 
-    }
+}
 
-    public class WikiSiteConfig
-    {
-        
-        public string ApiEndpoint { get; set; }
+public class WikiSiteConfig
+{
 
-        public string UserName { get; set; }
+    public string ApiEndpoint { get; set; }
 
-        public string Password { get; set; }
+    public string UserName { get; set; }
 
-    }
+    public string Password { get; set; }
 
-    public class SynchronizerConfig
-    {
-        public string RepositorySite { get; set; }
+}
 
-        public IList<string> ClientSites { get; set; }
+public class SynchronizerConfig
+{
 
-        public ICollection<int> Namespaces { get; set; }
+    public string RepositorySite { get; set; }
 
-        public bool WhatIf { get; set; }
-        
-    }
+    public IList<string> ClientSites { get; set; }
 
-    public class StateStoreConfig
-    {
+    public ICollection<int> Namespaces { get; set; }
 
-        public string FileName { get; set; }
+    public bool WhatIf { get; set; }
 
-    }
+}
 
-    public class DiscordWebhookConfig
-    {
+public class StateStoreConfig
+{
 
-        public string Token { get; set; }
+    public string FileName { get; set; }
 
-        public ulong Id { get; set; }
+}
 
-    }
+public class DiscordWebhookConfig
+{
+
+    public string Token { get; set; }
+
+    public ulong Id { get; set; }
 
 }
