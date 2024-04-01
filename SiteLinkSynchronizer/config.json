@@ -14,7 +14,12 @@
     "dewarriorswiki": { "ApiEndpoint": "https://warrior-cats.fandom.com/de/api.php" },
     "cswarriorswiki": { "ApiEndpoint": "https://valecnici.fandom.com/cs/api.php" },
     "plwarriorswiki": { "ApiEndpoint": "https://wojownicy.fandom.com/pl/api.php" },
-    "kowarriorswiki": { "ApiEndpoint": "https://warriors.fandom.com/ko/api.php" }
+    "kowarriorswiki": { "ApiEndpoint": "https://warriors.fandom.com/ko/api.php" },
+    "dawarriorswiki": { "ApiEndpoint": "https://krigerkattene.fandom.com/da/api.php" },
+    "lvwarriorswiki": { "ApiEndpoint": "https://klanukaki.fandom.com/api.php" },
+    "nowarriorswiki": { "ApiEndpoint": "https://kattekrigerne.fandom.com/no/api.php" },
+    "rowarriorswiki": { "ApiEndpoint": "https://pisicile-razboinice.fandom.com/ro/api.php" },
+    "svwarriorswiki": { "ApiEndpoint": "https://warriors-svensk.fandom.com/sv/api.php" }
   },
   "Synchronizer": {
     "RepositorySite": "crystalpool",
@@ -32,7 +37,12 @@
       "dewarriorswiki",
       "cswarriorswiki",
       "plwarriorswiki",
-      "kowarriorswiki"
+      "kowarriorswiki",
+      "dawarriorswiki",
+      "lvwarriorswiki",
+      "nowarriorswiki",
+      "rowarriorswiki",
+      "svwarriorswiki"
     ],
     "Namespaces": [ 0, 4 ],
     "WhatIf": true
