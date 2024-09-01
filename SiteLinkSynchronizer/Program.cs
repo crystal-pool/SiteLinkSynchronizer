@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using SiteLinkSynchronizer.Configuration;
 using SiteLinkSynchronizer.States;
-using WikiClientLibrary.Bots;
 using WikiClientLibrary.Client;
 using WikiClientLibrary.Sites;
 using Serilog;
@@ -38,8 +37,9 @@ internal static class Program
         services.AddTransient<BySiteLinkSynchronizer>();
         services.AddSingleton<IWikiClient>(sp => new WikiClient
         {
-            ClientUserAgent = WikiClientUtility.BuildUserAgent(typeof(Program).Assembly),
-            Timeout = TimeSpan.FromMinutes(1)
+            // UA example: SiteLinkSynchronizer/1.0 WikiClientLibrary/0.7 (.NET 8.0; http://github.com/cxuesong/WikiClientLibrary)
+            ClientUserAgent = WikiClientHelper.BuildUserAgent(typeof(Program).Assembly),
+            Timeout = TimeSpan.FromMinutes(1),
         });
         services.AddSingleton<IWikiFamily>(sp =>
         {
