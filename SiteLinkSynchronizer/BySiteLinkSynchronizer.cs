@@ -89,9 +89,11 @@ public class BySiteLinkSynchronizer
         var endTime = DateTime.UtcNow - TimeSpan.FromMinutes(1);
         if (endTime - startTime > MaxCheckDuration)
         {
-            logger.Warning("Max check duration reached on {Site}.", clientSiteName);
-            messenger.PushMessage("Max check duration reached on {0}.", clientSiteName);
             endTime = startTime + MaxCheckDuration;
+            logger.Warning("Max check duration {MaxCheckDuration} reached on {Site}. Clamped end time to: {EndTime}",
+                MaxCheckDuration, clientSiteName, endTime);
+            messenger.PushMessage("Max check duration {0} reached on {1}. Clamped end time to: {2}.",
+                MaxCheckDuration, clientSiteName, endTime);
         }
         logger.Information("Checking on {Site}, {Timestamp1} ~ {Timestamp2} ({Duration:G}), LastLogId: {StartLogId}, {Flags}",
             clientSiteName, startTime, endTime, endTime - startTime, lastLogId, WhatIf ? "[W]" : null);
